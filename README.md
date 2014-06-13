@@ -15,6 +15,13 @@ Supported Formats
 
 in progress: wpd (Corel/WP)
 
+Requirements
+============
+Elastic search running on local host
+
+How to see the data we indexed
+==============================
+I used the html ui here: http://mobz.github.io/elasticsearch-head/
 
 What Next?
 ===========
