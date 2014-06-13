@@ -9,48 +9,63 @@ es = Elasticsearch()
 
 
 def process_file(root, filename):
-  full_filename = '{root}/{filename}'.format(root=root, filename=filename)
-  print "PROCESSING ==== {filename}".format(filename=filename)
+    full_filename = '{root}/{filename}'.format(root=root, filename=filename)
+    print "PROCESSING ==== {filename}".format(filename=filename)
   
-  if filename.lower().endswith('.doc') or filename.lower().endswith('.rtf'):
-    contents = text_from_doc(full_filename)
-  elif filename.lower().endswith('.txt'):
-    return
-    f = open(full_filename, 'r')
-    contents = f.read()
-    f.close()
-  else:
-    print "I don't know how to read this : " + filename
-    return
+    if filename.lower().endswith('.doc') or filename.lower().endswith('.rtf'):
+	contents = text_from_doc(full_filename)
+    elif filename.lower().endswith('.txt'):
+	return
+	f = open(full_filename, 'r')
+	contents = f.read()
+	f.close()
+    else:
+	print "I don't know how to read this : " + filename
+	return
   
-  if not contents:
-    print "I don't know how to read this"
-    return
-  #contents = restore_windows_1252_characters(contents)
-  try:
-    contents = contents.decode("ascii","ignore")
-  except:
-    print "------------------------------"
-    print contents
-    raise
+    if not contents:
+	print "I don't know how to read this"
+	return
+  
+    try:
+	contents = contents.decode("ascii","ignore")
+    except:
+	print "------------------------------"
+	print contents
+	raise
    
-  #for line in f:
-    #print line,
-	
-  try:
-    print es.index(index="basic-index", doc_type="test-type", id=filename, body={"filename": full_filename, "contents": contents})
-  except Exception, e:
+    assert contents
+    
     print contents
-    raise
+    print "======================"
+    
+    body = {"filename": full_filename, 
+	    #"contents": contents,
+	    }
+    if contents.find("PRESENTER:"):
+	body['interview'] = interview_data(contents)
+	
+    print body
+	
+    try:
+	print es.index(index="basic-index", doc_type="test-type", id=filename, body=body)
+    except Exception, e:
+	print contents
+	raise
 
+def interview_data(contents):
+    lines = contents.split("\n")
+    title = lines[0]
+    return {'title': title}
 
 def text_from_doc(full_filename):
-  return subprocess.check_call(['catdoc', full_filename])
+    return subprocess.check_output(['catdoc', full_filename])
 
 
-for root, dirs, files in os.walk('.'):
-  for filename in files:
-    process_file(root, filename)
+for root, dirs, files in os.walk('./dataset'):
+    for filename in files:
+	if filename.endswith('.doc'):
+	    process_file(root, filename)
 
 	
 	
