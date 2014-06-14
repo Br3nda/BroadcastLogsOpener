@@ -12,8 +12,7 @@ Supported Formats
 * txt
 * doc
 * rtf
-
-in progress: wpd (Corel/WP)
+* wpd (some of them)
 
 Requirements
 ============
