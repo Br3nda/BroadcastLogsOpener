@@ -17,27 +17,38 @@ from elasticsearch import Elasticsearch
 es = Elasticsearch()
 
 
+def get_content(full_filename):
+    try:
+	# WORD DOCS
+	if filename.lower().endswith('.doc') or filename.lower().endswith('.rtf'):
+	    return text_from_doc(full_filename)
+	# Boring txt
+	elif filename.lower().endswith('.txt'):	
+	    f = open(full_filename, 'r')
+	    contents = f.read()
+	    f.close()
+	    return contents
+	elif filename.lower().endswith('.wpd'):
+	    return text_from_wpd(full_filename)
+	# TODO
+	else:
+	    logger.error( "I don't know how to read this : " + full_filename)
+	    return
+    except Exception, e:
+	logger.error("Unable to read contents from {filename}".format(filename=full_filename))
+	logger.exception(e)
+    
 
 def process_file(root, filename):
     full_filename = '{root}/{filename}'.format(root=root, filename=filename)
-    logger.debug("PROCESSING ==== {filename}".format(filename=filename))
+    logger.info("PROCESSING ==== {filename}".format(filename=filename))
   
   
-    # WORD DOCS
-    if filename.lower().endswith('.doc') or filename.lower().endswith('.rtf'):
-	contents = text_from_doc(full_filename)
-    # Boring txt
-    elif filename.lower().endswith('.txt'):	
-	f = open(full_filename, 'r')
-	contents = f.read()
-	f.close()
-    # TODO
-    else:
-	logger.error( "I don't know how to read this : " + full_filename)
-	return
+  
+    contents = get_content(full_filename)
   
     if not contents:
-	logger.error("I found no contents in this file:" + full_filename)
+	logger.error("I found no contents in this file: {filename}".format(filename=full_filename))
 	return
   
     try:
@@ -48,16 +59,13 @@ def process_file(root, filename):
    
     assert contents
     
-    #print contents
-    #print "======================"
-    
     body = {"filename": full_filename, 
 	    #"contents": contents,
 	    }
     if contents.find("PRESENTER:"):
 	interview_data(contents, filename)
 	
-    logger.info(body)
+    logger.debug(body)
 	
     try:
 	logger.debug( es.index(index="newztel-index", doc_type="test-type", id=filename, body=body))
@@ -77,11 +85,17 @@ def interview_data(contents, filename):
 		    }
     try:
 	date = title.split("\t")[1]
+	if not date:
+	    logger.warning("Cannot find a date. filename={filename} Title is {title}".format(title=title, filename=filename))
+	    return 
 	logger.debug("Date = {date}".format(date=date))
 
 	body['date'] = datetime.datetime.strptime(date, '%A %d %B %Y')
     except:
 	pass
+    
+    
+
     
     dialogue = []
     prev_line = None
@@ -121,6 +135,9 @@ def interview_data(contents, filename):
 	#time.sleep(0.5)
 
     return {'title': title} #, dialogue: dialogue}
+
+def text_from_wpd(full_filename):
+    return subprocess.check_output(['wpd2text', full_filename])
 
 def text_from_doc(full_filename):
     return subprocess.check_output(['catdoc', full_filename])
