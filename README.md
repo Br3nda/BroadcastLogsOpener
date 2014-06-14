@@ -33,4 +33,4 @@ We used elastic search, but the end goal is to send to DigitalNZ
 
 Each file read has a "PID". There is a spreadsheet that maps the filename to the PID. A URL for each file can be calculated from the PID. 
 
-
+A standalone search app (bottle???) might be next.
